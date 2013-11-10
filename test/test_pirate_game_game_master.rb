@@ -1,6 +1,8 @@
 require 'minitest/autorun'
 require 'pirate_game'
 
+Thread.abort_on_exception = true
+
 class TestPirateGameGameMaster < MiniTest::Unit::TestCase
 
   def setup
@@ -11,6 +13,7 @@ class TestPirateGameGameMaster < MiniTest::Unit::TestCase
     DRb.stop_service if DRb.primary_server
     DRb.start_service nil, @client
   end
+
 
   def test_initialize
     assert_nil @game_master.stage
@@ -32,6 +35,7 @@ class TestPirateGameGameMaster < MiniTest::Unit::TestCase
     assert_equal 2, @game_master.stage.level
     assert_equal 2, @game_master.stage_ary.length
   end
+
 
   def test_startable_eh
 
@@ -63,6 +67,7 @@ class TestPirateGameGameMaster < MiniTest::Unit::TestCase
     assert @game_master.startable?
   end
 
+
   def test_start
     make_services
     assert @game_master.start
@@ -84,6 +89,8 @@ class TestPirateGameGameMaster < MiniTest::Unit::TestCase
   end
 
   def test_update
+    require 'pry'
+    binding.pry
     assert_equal 0, @game_master.num_players
     assert_empty @game_master.player_names
 
@@ -99,7 +106,8 @@ class TestPirateGameGameMaster < MiniTest::Unit::TestCase
   end
 
   def make_services
-    def @game_master.read_registered_services
+    mothership = @game_master.instance_variable_get(:@mothership)
+    def mothership.read_registered_services
       [['Davy', DRb.uri], ['Eric', DRb.uri]]
     end
   end

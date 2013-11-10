@@ -8,7 +8,7 @@ class TestPirateGameClient < MiniTest::Unit::TestCase
 
     @client = PirateGame::Client.new(name: 'foo')
 
-    @client.instance_variable_set :@mothership, @ts
+    @client.instance_variable_get(:@shuttlecraft).instance_variable_set :@mothership, @ts
   end
 
   def test_initialize

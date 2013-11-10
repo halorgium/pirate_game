@@ -5,6 +5,8 @@ require 'hoe'
 
 Hoe.plugin :minitest
 Hoe.plugin :git
+Hoe.plugin :bundler
+Hoe.plugin :gemspec
 
 Hoe.spec 'pirate_game' do
   developer 'Davy Stevenson', 'davy.stevenson@gmail.com'

@@ -2,7 +2,7 @@ require 'shuttlecraft'
 require 'thread'
 require 'timeout'
 
-class PirateGame::Client < Shuttlecraft
+class PirateGame::Client
 
   STATES = [:select_game, :pub, :stage, :end]
 
@@ -38,7 +38,7 @@ class PirateGame::Client < Shuttlecraft
   def initialize(opts={})
     opts[:protocol] ||= PirateGame::Protocol.default
 
-    super(opts.merge({:verbose => true}))
+    @shuttlecraft = Shuttlecraft.new(opts.merge({:verbose => true}))
 
     set_state :select_game
 
@@ -56,6 +56,15 @@ class PirateGame::Client < Shuttlecraft
     "Blackbeard"
   end
 
+  def discover
+    @shuttlecraft.find_all_motherships
+  end
+
+  def connect(mothership)
+    @shuttlecraft.initiate_communication_with_mothership(mothership)
+    register
+  end
+
   def action_time_left
     return 0 unless waiting?
 
@@ -71,7 +80,7 @@ class PirateGame::Client < Shuttlecraft
   def clicked button
     renewer = Rinda::SimpleRenewer.new @completion_time
 
-    @mothership.write [:button, button, Time.now.to_i, DRb.uri], renewer
+    @shuttlecraft.write [:button, button, Time.now.to_i, DRb.uri], renewer
   end
 
   def issue_command item=nil
@@ -90,7 +99,7 @@ class PirateGame::Client < Shuttlecraft
 
   def register
     set_state :pub
-    super
+    @shuttlecraft.register
   end
 
   def start_stage(bridge, all_items)
@@ -117,13 +126,14 @@ class PirateGame::Client < Shuttlecraft
   # Sends action message to Game Master indicating
   # that action has been successfully performed
   def perform_action item, time, from
-    if @mothership
-      @mothership.write [:action, item, time, from]
+    if @shuttlecraft.registered?
+      @shuttlecraft.write [:action, item, time, from]
+      # TODO: else?
     end
   end
 
   def broadcast(msg)
-    each_client {|remote| remote.say(msg, @name) }
+    @shuttlecraft.each_client {|remote| remote.say(msg, @name) }
   end
 
   def say(msg, name)
@@ -144,7 +154,7 @@ class PirateGame::Client < Shuttlecraft
 
     Timeout.timeout @completion_time do
       _, _, _, from =
-        @mothership.read [:button, item, (now...now + 30), nil], renewer
+        @shuttlecraft.read [:button, item, (now...now + 30), nil], renewer
     end
 
     perform_action item, Time.now, from

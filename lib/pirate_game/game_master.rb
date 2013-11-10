@@ -1,6 +1,6 @@
 require 'shuttlecraft/mothership'
 
-class PirateGame::GameMaster < Shuttlecraft::Mothership
+class PirateGame::GameMaster
 
 
   MIN_PLAYERS = 1 # for now
@@ -28,7 +28,7 @@ class PirateGame::GameMaster < Shuttlecraft::Mothership
   def initialize(opts={})
     opts[:protocol] ||= PirateGame::Protocol.default
 
-    super(opts.merge({:verbose => true}))
+    @mothership = Shuttlecraft::Mothership.new(opts.merge({:verbose => true, :owner => self}))
 
     set_state :pending
 
@@ -106,7 +106,7 @@ class PirateGame::GameMaster < Shuttlecraft::Mothership
   end
 
   def startable?
-    update!
+    update(@mothership.update!)
     return (@stage.nil? || @stage.success?) &&
            @num_players >= MIN_PLAYERS &&
            @num_players <= MAX_PLAYERS
@@ -152,20 +152,20 @@ class PirateGame::GameMaster < Shuttlecraft::Mothership
   end
 
   def send_start_to_clients
-    each_client do |client|
+    @mothership.each_client do |client|
       bridge = @stage.bridge_for_player
       client.start_stage(bridge, @stage.all_items)
     end
   end
 
   def send_return_to_pub_to_clients
-    each_client do |client|
+    @mothership.each_client do |client|
       client.return_to_pub
     end
   end
 
   def send_end_game_to_clients
-    each_client do |client|
+    @mothership.each_client do |client|
       client.end_game game_rundown
     end
   end
@@ -173,7 +173,7 @@ class PirateGame::GameMaster < Shuttlecraft::Mothership
   def create_action_watcher
     Thread.new do
       loop do
-        handle_action @ts.take([:action, nil, nil, nil])
+        handle_action @mothership.take([:action, nil, nil, nil])
       end
     end
   end
@@ -187,15 +187,15 @@ class PirateGame::GameMaster < Shuttlecraft::Mothership
   ##
   # Retrieves the latest data from the TupleSpace.
 
-  def update
-    ret = super
-    return if ret.nil?
+  def update(services = nil)
+    services ||= @mothership.update
+    return if services.nil?
 
-    @num_players = @registered_services_ary.length
+    @num_players = services.length
 
-    @player_names = @registered_services_ary.map { |name,| name }
+    @player_names = services.map { |name,| name }
 
-    ret
+    services
   end
 
   private

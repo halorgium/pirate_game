@@ -109,7 +109,7 @@ class PirateGame::ClientApp
       def select_game_screen
         @items_animation.start if @items_animation
 
-        motherships = @client.find_all_motherships
+        motherships = @client.discover
 
         title_text = if motherships.empty? then
                        "No Games Found"
@@ -307,8 +307,7 @@ class PirateGame::ClientApp
       def draw_mothership_button mothership
         button(mothership[:name]) {|b|
           begin
-            @client.initiate_communication_with_mothership(b.text)
-            @client.register
+            @client.connect(b.text)
           rescue
             select_game_screen
           end
